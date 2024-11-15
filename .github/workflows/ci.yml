@@ -1,0 +1,66 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Start Selenoid
+      run: |
+        docker run -d --name selenoid \
+          -p 4444:4444 \
+          -v /var/run/docker.sock:/var/run/docker.sock \
+          -v ${{ github.workspace }}/browser.json:/etc/selenoid/browsers.json:ro \
+          aerokube/selenoid:latest-release \
+          -conf /etc/selenoid/browsers.json -limit 10
+    
+    - name: Wait for Selenoid
+      run: |
+        timeout 60 bash -c 'until curl -f http://localhost:4444/status; do sleep 2; done'
+    
+    - name: Run tests
+      env:
+        SELENOID_URL: http://localhost:4444/wd/hub
+      run: |
+        pytest --alluredir=allure-results -v
+    
+    - name: Generate Allure Report
+      if: always()
+      uses: simple-elf/allure-report-action@master
+      with:
+        allure_results: allure-results
+        allure_history: allure-history
+        keep_reports: 20
+    
+    - name: Upload Allure Report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: allure-report
+        path: allure-results
+        retention-days: 30
+    
+    - name: Cleanup
+      if: always()
+      run: |
+        docker stop selenoid || true
+        docker rm selenoid || true
+
