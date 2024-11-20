@@ -2,19 +2,20 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, master, dev ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, master, dev ]
+  workflow_dispatch:
 
 jobs:
   test:
     runs-on: ubuntu-latest
     
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
     
@@ -23,22 +24,23 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
     
-    - name: Start Selenoid
+    - name: Install Chrome
       run: |
-        docker run -d --name selenoid \
-          -p 4444:4444 \
-          -v /var/run/docker.sock:/var/run/docker.sock \
-          -v ${{ github.workspace }}/browser.json:/etc/selenoid/browsers.json:ro \
-          aerokube/selenoid:latest-release \
-          -conf /etc/selenoid/browsers.json -limit 10
+        sudo apt-get update
+        sudo apt-get install -y google-chrome-stable || true
+        google-chrome --version || echo "Chrome installation check"
     
-    - name: Wait for Selenoid
+    - name: Install ChromeDriver
       run: |
-        timeout 60 bash -c 'until curl -f http://localhost:4444/status; do sleep 2; done'
+        CHROME_VERSION=$(google-chrome --version | awk '{print $3}' | cut -d. -f1) || echo "120"
+        CHROMEDRIVER_VERSION=$(curl -s "https://googlechromelabs.github.io/chrome-for-testing/LATEST_RELEASE_${CHROME_VERSION}")
+        wget -q "https://storage.googleapis.com/chrome-for-testing-public/${CHROMEDRIVER_VERSION}/linux64/chromedriver-linux64.zip"
+        unzip -q chromedriver-linux64.zip
+        sudo mv chromedriver-linux64/chromedriver /usr/local/bin/chromedriver
+        sudo chmod +x /usr/local/bin/chromedriver
+        chromedriver --version
     
     - name: Run tests
-      env:
-        SELENOID_URL: http://localhost:4444/wd/hub
       run: |
         pytest --alluredir=allure-results -v
     
@@ -52,15 +54,8 @@ jobs:
     
     - name: Upload Allure Report
       if: always()
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: allure-report
         path: allure-results
         retention-days: 30
-    
-    - name: Cleanup
-      if: always()
-      run: |
-        docker stop selenoid || true
-        docker rm selenoid || true
-
