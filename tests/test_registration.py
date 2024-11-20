@@ -21,8 +21,6 @@ class TestRegistration:
         main_page.click_create_account_button()
         
         registration_page = RegistrationPage(driver)
-        registration_page.wait_for_registration_form()
-        
         registration_page.fill_registration_form(
             user_data["first_name"],
             user_data["last_name"],
@@ -31,11 +29,8 @@ class TestRegistration:
             user_data["password"]
         )
         registration_page.click_submit_button()
-        registration_page.accept_alert_if_present()
-        registration_page.wait_for_url_contains("signin", timeout=15)
         
         login_page = LoginPage(driver)
-        login_page.wait_for_login_form()
         assert login_page.is_login_form_visible(), "Форма авторизации не отображается"
         assert login_page.is_login_page(), "Не произошел переход на страницу авторизации"
 

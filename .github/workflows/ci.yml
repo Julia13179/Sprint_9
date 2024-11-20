@@ -54,6 +54,8 @@ jobs:
         echo "ChromeDriver version: $(chromedriver --version)"
     
     - name: Run tests
+      env:
+        CI: true
       run: |
         pytest --alluredir=allure-results -v
     

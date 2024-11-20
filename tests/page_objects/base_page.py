@@ -4,6 +4,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoAlertPresentException
 from pathlib import Path
+import os
 
 
 class BasePage:
@@ -11,7 +12,9 @@ class BasePage:
     
     def __init__(self, driver: WebDriver):
         self.driver = driver
-        self.wait = WebDriverWait(driver, 10)
+        # Увеличиваем таймаут для CI окружения (GitHub Actions)
+        timeout = 20 if os.getenv('CI') else 10
+        self.wait = WebDriverWait(driver, timeout)
     
     def find_element(self, locator: tuple):
         """Поиск элемента с ожиданием"""
