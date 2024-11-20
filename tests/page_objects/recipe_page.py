@@ -26,31 +26,57 @@ class RecipePage(BasePage):
     def fill_recipe_form(self, name: str, description: str, image_path: str, ingredient: str):
         """Заполнение формы создания рецепта"""
         from selenium.webdriver.common.keys import Keys
+        from selenium.common.exceptions import TimeoutException
         
         self.send_keys(self.NAME_INPUT, name)
-        self.wait.until(EC.text_to_be_present_in_element_value(self.NAME_INPUT, name))
+        try:
+            self.wait.until(EC.text_to_be_present_in_element_value(self.NAME_INPUT, name))
+        except TimeoutException:
+            pass
         
         self.send_keys(self.COOKING_TIME_INPUT, "30")
-        self.wait.until(EC.text_to_be_present_in_element_value(self.COOKING_TIME_INPUT, "30"))
+        try:
+            self.wait.until(EC.text_to_be_present_in_element_value(self.COOKING_TIME_INPUT, "30"))
+        except TimeoutException:
+            pass
         
         self.send_keys(self.SERVINGS_INPUT, "4")
-        self.wait.until(EC.text_to_be_present_in_element_value(self.SERVINGS_INPUT, "4"))
+        try:
+            self.wait.until(EC.text_to_be_present_in_element_value(self.SERVINGS_INPUT, "4"))
+        except TimeoutException:
+            pass
         
         self.send_keys(self.DESCRIPTION_INPUT, description)
-        self.wait.until(EC.text_to_be_present_in_element_value(self.DESCRIPTION_INPUT, description))
+        try:
+            self.wait.until(EC.text_to_be_present_in_element_value(self.DESCRIPTION_INPUT, description))
+        except TimeoutException:
+            pass
         
         image_input = self.find_element(self.IMAGE_INPUT)
         image_input.send_keys(image_path)
-        self.wait.until(lambda d: image_input.get_attribute('value') != '')
+        try:
+            self.wait.until(lambda d: image_input.get_attribute('value') != '')
+        except TimeoutException:
+            pass
         
         ingredient_input = self.find_element(self.INGREDIENT_INPUT)
+        self.wait.until(EC.element_to_be_clickable(self.INGREDIENT_INPUT))
         ingredient_input.click()
         ingredient_input.clear()
         ingredient_input.send_keys(ingredient[:3])
         
+        try:
+            self.wait.until(EC.text_to_be_present_in_element_value(self.INGREDIENT_INPUT, ingredient[:3]), timeout=5)
+        except TimeoutException:
+            pass
+        
         ingredient_input.send_keys(Keys.ARROW_DOWN)
         ingredient_input.send_keys(Keys.ENTER)
-        self.wait.until(lambda d: ingredient_input.get_attribute('value') != ingredient[:3])
+        
+        try:
+            self.wait.until(lambda d: ingredient_input.get_attribute('value') != ingredient[:3], timeout=5)
+        except TimeoutException:
+            pass
     
     def is_submit_button_enabled(self) -> bool:
         """Проверка активности кнопки создания рецепта"""

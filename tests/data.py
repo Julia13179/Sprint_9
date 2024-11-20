@@ -2,7 +2,7 @@
 import random
 import string
 
-BASE_URL = "https://foodgram-frontend-1.prakticum-team.ru/"
+BASE_URL = "https://foodgram-frontend-1.praktikum-team.ru/"
 
 def generate_random_string(length=12):
     """Генерация случайной строки"""
