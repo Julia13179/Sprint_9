@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  selenoid:
+    image: aerokube/selenoid:latest-release
+    container_name: selenoid
+    ports:
+      - "4444:4444"
+    volumes:
+      - ./browser.json:/etc/selenoid/browsers.json:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: ["-conf", "/etc/selenoid/browsers.json", "-limit", "10"]
+    networks:
+      - test-network
+
+  tests:
+    build: .
+    container_name: tests
+    depends_on:
+      - selenoid
+    environment:
+      - SELENOID_URL=http://selenoid:4444/wd/hub
+    volumes:
+      - ./allure-results:/app/allure-results
+    networks:
+      - test-network
+
+networks:
+  test-network:
+    driver: bridge
+
